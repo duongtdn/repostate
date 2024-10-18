@@ -2,7 +2,7 @@
 
 import RepoState from 'RepoState'
 
-describe('initState Function', () => {
+describe('RepoState.initState', () => {
 
   const mockState = { root: { branch: 'leaf' } };
 
@@ -32,9 +32,7 @@ describe('initState Function', () => {
 
 })
 
-describe('addReducer Function', () => {
-
-  const mockState = { root: { branch: 'leaf' } };
+describe('RepoState.addReducer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -95,4 +93,246 @@ describe('addReducer Function', () => {
   });
 
 })
+
+describe('RepoState.dispatchReducer', () => {
+
+  let mockReducerBranchSet;
+  let mockReducerTrunkSet;
+  let mockReducerRootSet;
+
+  const state = {
+    root: {
+      trunk: {
+        branch: 'leaf',
+      },
+      leaves: [
+        { id: 1, name: 'Leaf 1' },
+        { id: 2, name: 'Leaf 2' },
+      ],
+    }
+  };
+
+  const ensureOriginalStateWasNotMutated = () => {
+    expect(state).toEqual({
+      root: {
+        trunk: {
+          branch: 'leaf',
+        },
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ],
+      }
+    });
+  }
+
+  beforeEach(() => {
+
+    jest.clearAllMocks();
+    RepoState.clear();
+
+    mockReducerBranchSet = jest.fn((state, value) => (value));
+    mockReducerTrunkSet = jest.fn((state, value) => ({ ...state, ...value }));
+    mockReducerRootSet = jest.fn((state, value) => ({
+      ...state,
+      root: {
+        ...state.root,
+        ...value.root
+      }
+    }));
+
+    RepoState.initState(state);
+    RepoState.addReducer('root.trunk.branch', 'set', mockReducerBranchSet);
+    RepoState.addReducer('root.trunk', 'set', mockReducerTrunkSet);
+    RepoState.addReducer('@', 'set', mockReducerRootSet);
+  });
+
+  test('should update state immutably for a valid statePath and type with correct reducer', () => {
+    const action = { statePath: 'root.trunk.branch', type: 'set', value: 'newLeaf' };
+
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(mockReducerBranchSet).toHaveBeenCalledWith(
+      'leaf', 'newLeaf'
+    );
+
+    expect(newState).toEqual({
+      root: {
+        trunk: {
+          branch: 'newLeaf'
+        },
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ]
+      }
+    });
+
+    ensureOriginalStateWasNotMutated();
+  });
+
+  test('should apply root-level reducer when statePath is "@"', () => {
+    const action = { statePath: '@', type: 'set', value: { root: { trunk: 'newTrunk' } } };
+
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(mockReducerRootSet).toHaveBeenCalledWith(state, action.value);
+
+    expect(newState).toEqual({
+      root: {
+        trunk: 'newTrunk',
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ]
+      }
+    });
+
+    ensureOriginalStateWasNotMutated();
+  });
+
+  test('should apply root-level reducer when statePath is null', () => {
+    const action = { statePath: null, type: 'set', value: { root: { trunk: 'newTrunk' } } };
+
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(mockReducerRootSet).toHaveBeenCalledWith(state, action.value);
+
+    expect(newState).toEqual({
+      root: {
+        trunk: 'newTrunk',
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ]
+      }
+    });
+
+    ensureOriginalStateWasNotMutated();
+  });
+
+  test('should apply root-level reducer when statePath is undefined', () => {
+    const action = { statePath: undefined, type: 'set', value: { root: { trunk: 'newTrunk' } } };
+
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(mockReducerRootSet).toHaveBeenCalledWith(state, action.value);
+
+    expect(newState).toEqual({
+      root: {
+        trunk: 'newTrunk',
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ]
+      }
+    });
+
+    ensureOriginalStateWasNotMutated();
+  });
+
+  test('should throw an error for nonexistant state path', () => {
+    const action = { statePath: 'root.nonExistent', type: 'set', value: 'newValue' };
+
+    expect(() => RepoState.dispatchReducer(state, action)).toThrowError('State path "root.nonExistent" does not exist');
+  });
+
+  test('should override the value as default reducer if type is null', () => {
+    const action = { statePath: 'root.trunk.branch', type: null, value: 'newBranch' };
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(newState).toEqual({
+      root: {
+        trunk: {
+          branch: 'newBranch',
+        },
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ],
+      }
+    });
+  });
+
+  test('should override the value as default reducer if type is undefined', () => {
+    const action = { statePath: 'root.trunk.branch', type: undefined, value: 'newBranch' };
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(newState).toEqual({
+      root: {
+        trunk: {
+          branch: 'newBranch',
+        },
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ],
+      }
+    });
+  });
+
+  test('should throw an error if no reducer exists for the given type within a valid statePath', () => {
+    const action = { statePath: 'root.trunk.branch', type: 'remove', value: null };
+
+    expect(() => RepoState.dispatchReducer(state, action)).toThrowError('No reducer found for statePath: root.trunk.branch and type: remove');
+  });
+
+  test('should update nested state immutably when applying reducer to nested statePath', () => {
+    const action = { statePath: 'root.trunk', type: 'set', value: { branch: 'newLeaf' } };
+
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(mockReducerTrunkSet).toHaveBeenCalledWith({ branch: 'leaf' }, action.value);
+
+    expect(newState).toEqual({
+      root: {
+        trunk: {
+          branch: 'newLeaf'
+        },
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ],
+      }
+    });
+
+    ensureOriginalStateWasNotMutated();
+
+  });
+
+  test('should append a new value to an array in the state immutably', () => {
+    const mockAppendToLeaves = jest.fn((state, value) => [...state, value]);
+
+    RepoState.addReducer('root.leaves', 'append', mockAppendToLeaves);
+
+    const action = {
+      statePath: 'root.leaves',
+      type: 'append',
+      value: { id: 3, name: 'Leaf 3' }
+    };
+
+    const newState = RepoState.dispatchReducer(state, action);
+
+    expect(mockAppendToLeaves).toHaveBeenCalledWith(
+      state.root.leaves,
+      { id: 3, name: 'Leaf 3' }
+    );
+
+    expect(newState).toEqual({
+      root: {
+        trunk: {
+          branch: 'leaf',
+        },
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+          { id: 3, name: 'Leaf 3' } // The newly added leaf
+        ],
+      }
+    });
+
+    ensureOriginalStateWasNotMutated();
+  });
+
+});
 

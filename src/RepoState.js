@@ -25,11 +25,12 @@ class RepoState {
   getReducers = () => this.#reducers;
 
   addReducer = (statePath, type, reduceFn) => {
-    const pathKey = statePath === null ? '@' : statePath.trim();
 
     if (statePath && !this.#doesStatePathExist(statePath)) {
       throw new Error(`State path "${statePath}" does not exist`);
     }
+
+    const pathKey = statePath === null ? '@' : statePath.trim();
 
     if (!this.#reducers[pathKey]) {
       this.#reducers[pathKey] = {};
@@ -57,6 +58,56 @@ class RepoState {
     }
     return true;
   };
+
+  dispatchReducer = (state, action) => {
+
+    const { statePath, type, value } = action;
+
+    if (statePath && !this.#doesStatePathExist(statePath)) {
+      throw new Error(`State path "${statePath}" does not exist`);
+    }
+
+    // Helper function to update the state at a specific path
+    const applyUpdateToState = (state, path, updatedSubState) => {
+      if (path) {
+        const updatedState = deepClone(state);
+
+        const pathParts = path.split('.');
+        let current = updatedState;
+
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          current = current[pathParts[i]];
+        }
+
+        current[pathParts[pathParts.length - 1]] = updatedSubState;
+
+        return updatedState;
+      } else {
+        return updatedSubState;
+      }
+    };
+
+    const pathToClone = statePath === null || statePath === undefined || statePath === '@' ? null : statePath;
+
+    const reducer = this.#reducers?.[statePath || '@']?.[type];
+
+    if (!reducer && (type === null || type === undefined)) {
+      // Default reducer behavior: directly override the value
+      return applyUpdateToState(state, pathToClone, value);
+    }
+
+    if (!reducer) {
+      throw new Error(`No reducer found for statePath: ${statePath} and type: ${type}`);
+    }
+
+    const clonedState = pathToClone ? deepClone(state, pathToClone) : deepClone(state);
+    const updatedSubState = reducer(clonedState, value);
+
+    return applyUpdateToState(state, pathToClone, updatedSubState);
+  };
+
+
+
 
 
 }
