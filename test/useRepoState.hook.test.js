@@ -1,36 +1,101 @@
-"use strict"
-import { useContext } from 'react';
+// useRepoState.hook.test.js
+
+import { renderHook, act } from '@testing-library/react';
 import useRepoState from 'useRepoState.hook';
+import RepoContext from 'RepoContext';
+import React from 'react';
 
-jest.mock('react', () => ({
-  ...jest.requireActual('react'),
-  useContext: jest.fn(),
-}));
+const mockState = {
+  root: {
+    trunk: {
+      branch: 'leaf',
+      anotherBranch: ['leaf', 'left'],
+    },
+    leaves: [
+      { id: 1, name: 'Leaf 1' },
+      { id: 2, name: 'Leaf 2' },
+    ],
+  },
+  secondaryRoot: {
+    flowers: [
+      { id: 1, type: 'rose' },
+      { id: 2, type: 'tulip' }
+    ]
+  }
+};
 
-describe('useRepoState Hook', () => {
+const mockDispatch = jest.fn();
 
-  const mockState = { root: { branch: 'leaf' } };
-  const mockDispatch = jest.fn();
+const wrapper = ({ children }) => (
+  <RepoContext.Provider value={{ state: mockState, dispatch: mockDispatch }}>
+    {children}
+  </RepoContext.Provider>
+);
 
-  beforeEach(() => {
+describe('useRepoState', () => {
+
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
-  test('should return state and dispatch from RepoContext', () => {
-    useContext.mockReturnValue({
-      state: mockState,
-      dispatch: mockDispatch,
-    });
+  test('should return entire state when statePaths is null', () => {
+    const { result } = renderHook(() => useRepoState(null), { wrapper });
 
-    const result = useRepoState();
-
-    expect(result[0]).toEqual(mockState);
-    expect(result[1]).toEqual(mockDispatch);
+    expect(result.current[0]).toEqual(mockState);
   });
 
-  test('should throw error if RepoContext is not set properly', () => {
-    useContext.mockReturnValue(undefined);
-    expect(() => useRepoState()).toThrowError();
+  test('should return entire state when statePaths is "@"', () => {
+    const { result } = renderHook(() => useRepoState('@'), { wrapper });
+
+    expect(result.current[0]).toEqual(mockState);
+  });
+
+  test('should return substate when statePaths is a single string', () => {
+    const { result } = renderHook(() => useRepoState('root.trunk'), { wrapper });
+
+    expect(result.current[0]).toEqual({
+      branch: 'leaf',
+      anotherBranch: ['leaf', 'left'],
+    });
+  });
+
+  test('should return substates when statePaths is an array of strings', () => {
+    const { result } = renderHook(() => useRepoState(['root.trunk.branch', 'root.leaves']), { wrapper });
+
+    expect(result.current[0]).toEqual({
+      root: {
+        trunk: {
+          branch: 'leaf'
+        },
+        leaves: [
+          { id: 1, name: 'Leaf 1' },
+          { id: 2, name: 'Leaf 2' },
+        ],
+      }
+    });
+  });
+
+  test('should return substate for a deeply nested statePath', () => {
+    const { result } = renderHook(() => useRepoState('secondaryRoot.flowers'), { wrapper });
+
+    expect(result.current[0]).toEqual([
+      { id: 1, type: 'rose' },
+      { id: 2, type: 'tulip' }
+    ]);
+  });
+
+  test('should call dispatch with the correct action object', () => {
+    const { result } = renderHook(() => useRepoState('root.trunk'), { wrapper });
+
+    act(() => {
+      result.current[1]('root.trunk.branch', 'set', 'newLeaf');
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      statePath: 'root.trunk.branch',
+      type: 'set',
+      value: 'newLeaf'
+    });
   });
 
 });
