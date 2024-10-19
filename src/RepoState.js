@@ -1,6 +1,8 @@
 'use strict'
 
+import React, { useEffect, useReducer } from 'react';
 import { deepClone } from './utils';
+import RepoContext from './RepoContext';
 
 class RepoState {
 
@@ -106,9 +108,20 @@ class RepoState {
     return applyUpdateToState(state, pathToClone, updatedSubState);
   };
 
-
-
-
+  Provider = ({children}) => {
+    const [state, dispatch] = useReducer(this.dispatchReducer, this.#state);
+    useEffect(() => { this.#state = deepClone(state); }, [state]);
+    return (
+      <RepoContext.Provider
+        value={{
+          state,
+          dispatch
+         }}
+      >
+        {children}
+      </RepoContext.Provider>
+    )
+  }
 
 }
 
