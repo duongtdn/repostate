@@ -61,7 +61,7 @@ class RepoState {
     return true;
   };
 
-  dispatchReducer = (state, action) => {
+  #dispatchReducer = (state, action) => {
 
     const { statePath, type, value } = action;
 
@@ -108,8 +108,14 @@ class RepoState {
     return applyUpdateToState(state, pathToClone, updatedSubState);
   };
 
+  // this expose interface for testing dispatchReducer only
+  __dispatch = (statePath, type, value) => {
+    const action = { statePath, type, value };
+    return this.#dispatchReducer(this.#state, action);
+  }
+
   Provider = ({children}) => {
-    const [state, dispatch] = useReducer(this.dispatchReducer, this.#state);
+    const [state, dispatch] = useReducer(this.#dispatchReducer, this.#state);
     useEffect(() => { this.#state = deepClone(state); }, [state]);
     return (
       <RepoContext.Provider

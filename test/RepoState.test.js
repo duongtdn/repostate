@@ -94,7 +94,7 @@ describe('RepoState.addReducer', () => {
 
 })
 
-describe('RepoState.dispatchReducer', () => {
+describe('RepoState.__dispatch (RepoState.#dispatchReducer)', () => {
 
   let mockReducerBranchSet;
   let mockReducerTrunkSet;
@@ -148,9 +148,11 @@ describe('RepoState.dispatchReducer', () => {
   });
 
   test('should update state immutably for a valid statePath and type with correct reducer', () => {
-    const action = { statePath: 'root.trunk.branch', type: 'set', value: 'newLeaf' };
+    const statePath = 'root.trunk.branch';
+    const type = 'set';
+    const value = 'newLeaf';
 
-    const newState = RepoState.dispatchReducer(state, action);
+    const newState = RepoState.__dispatch(statePath, type, value);
 
     expect(mockReducerBranchSet).toHaveBeenCalledWith(
       'leaf', 'newLeaf'
@@ -172,11 +174,13 @@ describe('RepoState.dispatchReducer', () => {
   });
 
   test('should apply root-level reducer when statePath is "@"', () => {
-    const action = { statePath: '@', type: 'set', value: { root: { trunk: 'newTrunk' } } };
+    const statePath = '@';
+    const type = 'set';
+    const value = { root: { trunk: 'newTrunk' } };
 
-    const newState = RepoState.dispatchReducer(state, action);
+    const newState = RepoState.__dispatch(statePath, type, value);
 
-    expect(mockReducerRootSet).toHaveBeenCalledWith(state, action.value);
+    expect(mockReducerRootSet).toHaveBeenCalledWith(state, value);
 
     expect(newState).toEqual({
       root: {
@@ -192,11 +196,13 @@ describe('RepoState.dispatchReducer', () => {
   });
 
   test('should apply root-level reducer when statePath is null', () => {
-    const action = { statePath: null, type: 'set', value: { root: { trunk: 'newTrunk' } } };
+    const statePath = null;
+    const type = 'set';
+    const value = { root: { trunk: 'newTrunk' } };
 
-    const newState = RepoState.dispatchReducer(state, action);
+    const newState = RepoState.__dispatch(statePath, type, value);
 
-    expect(mockReducerRootSet).toHaveBeenCalledWith(state, action.value);
+    expect(mockReducerRootSet).toHaveBeenCalledWith(state, value);
 
     expect(newState).toEqual({
       root: {
@@ -212,11 +218,13 @@ describe('RepoState.dispatchReducer', () => {
   });
 
   test('should apply root-level reducer when statePath is undefined', () => {
-    const action = { statePath: undefined, type: 'set', value: { root: { trunk: 'newTrunk' } } };
+    const statePath = undefined;
+    const type = 'set';
+    const value = { root: { trunk: 'newTrunk' } };
 
-    const newState = RepoState.dispatchReducer(state, action);
+    const newState = RepoState.__dispatch(statePath, type, value);
 
-    expect(mockReducerRootSet).toHaveBeenCalledWith(state, action.value);
+    expect(mockReducerRootSet).toHaveBeenCalledWith(state, value);
 
     expect(newState).toEqual({
       root: {
@@ -232,14 +240,19 @@ describe('RepoState.dispatchReducer', () => {
   });
 
   test('should throw an error for nonexistant state path', () => {
-    const action = { statePath: 'root.nonExistent', type: 'set', value: 'newValue' };
+    const statePath = 'root.nonExistent';
+    const type = 'set';
+    const value = 'newValue';
 
-    expect(() => RepoState.dispatchReducer(state, action)).toThrowError('State path "root.nonExistent" does not exist');
+    expect(() => RepoState.__dispatch(statePath, type, value)).toThrowError('State path "root.nonExistent" does not exist');
   });
 
   test('should override the value as default reducer if type is null', () => {
-    const action = { statePath: 'root.trunk.branch', type: null, value: 'newBranch' };
-    const newState = RepoState.dispatchReducer(state, action);
+    const statePath = 'root.trunk.branch';
+    const type = null;
+    const value = 'newBranch';
+
+    const newState = RepoState.__dispatch(statePath, type, value);
 
     expect(newState).toEqual({
       root: {
@@ -255,8 +268,11 @@ describe('RepoState.dispatchReducer', () => {
   });
 
   test('should override the value as default reducer if type is undefined', () => {
-    const action = { statePath: 'root.trunk.branch', type: undefined, value: 'newBranch' };
-    const newState = RepoState.dispatchReducer(state, action);
+    const statePath = 'root.trunk.branch';
+    const type = undefined;
+    const value = 'newBranch';
+
+    const newState = RepoState.__dispatch(statePath, type, value);
 
     expect(newState).toEqual({
       root: {
@@ -272,17 +288,21 @@ describe('RepoState.dispatchReducer', () => {
   });
 
   test('should throw an error if no reducer exists for the given type within a valid statePath', () => {
-    const action = { statePath: 'root.trunk.branch', type: 'remove', value: null };
+    const statePath = 'root.trunk.branch';
+    const type = 'remove';
+    const value = null;
 
-    expect(() => RepoState.dispatchReducer(state, action)).toThrowError('No reducer found for statePath: root.trunk.branch and type: remove');
+    expect(() => RepoState.__dispatch(statePath, type, value)).toThrowError('No reducer found for statePath: root.trunk.branch and type: remove');
   });
 
   test('should update nested state immutably when applying reducer to nested statePath', () => {
-    const action = { statePath: 'root.trunk', type: 'set', value: { branch: 'newLeaf' } };
+    const statePath = 'root.trunk';
+    const type = 'set';
+    const value = { branch: 'newLeaf' };
 
-    const newState = RepoState.dispatchReducer(state, action);
+    const newState = RepoState.__dispatch(statePath, type, value);
 
-    expect(mockReducerTrunkSet).toHaveBeenCalledWith({ branch: 'leaf' }, action.value);
+    expect(mockReducerTrunkSet).toHaveBeenCalledWith({ branch: 'leaf' }, value);
 
     expect(newState).toEqual({
       root: {
@@ -305,13 +325,11 @@ describe('RepoState.dispatchReducer', () => {
 
     RepoState.addReducer('root.leaves', 'append', mockAppendToLeaves);
 
-    const action = {
-      statePath: 'root.leaves',
-      type: 'append',
-      value: { id: 3, name: 'Leaf 3' }
-    };
+    const statePath = 'root.leaves';
+    const type = 'append';
+    const value = { id: 3, name: 'Leaf 3' };
 
-    const newState = RepoState.dispatchReducer(state, action);
+    const newState = RepoState.__dispatch(statePath, type, value);
 
     expect(mockAppendToLeaves).toHaveBeenCalledWith(
       state.root.leaves,
@@ -335,4 +353,5 @@ describe('RepoState.dispatchReducer', () => {
   });
 
 });
+
 
