@@ -50,7 +50,7 @@ describe('useRepoState', () => {
     expect(result.current[0]).toEqual(mockState);
   });
 
-  test('should return substate when statePaths is a single string', () => {
+  test('should return substate for a deeply nested statePath to an object', () => {
     const { result } = renderHook(() => useRepoState('root.trunk'), { wrapper });
 
     expect(result.current[0]).toEqual({
@@ -59,23 +59,7 @@ describe('useRepoState', () => {
     });
   });
 
-  test('should return substates when statePaths is an array of strings', () => {
-    const { result } = renderHook(() => useRepoState(['root.trunk.branch', 'root.leaves']), { wrapper });
-
-    expect(result.current[0]).toEqual({
-      root: {
-        trunk: {
-          branch: 'leaf'
-        },
-        leaves: [
-          { id: 1, name: 'Leaf 1' },
-          { id: 2, name: 'Leaf 2' },
-        ],
-      }
-    });
-  });
-
-  test('should return substate for a deeply nested statePath', () => {
+  test('should return substate for a deeply nested statePath to an array', () => {
     const { result } = renderHook(() => useRepoState('secondaryRoot.flowers'), { wrapper });
 
     expect(result.current[0]).toEqual([
@@ -84,15 +68,21 @@ describe('useRepoState', () => {
     ]);
   });
 
+  test('should return substate for a deeply nested statePath to a scalar value', () => {
+    const { result } = renderHook(() => useRepoState('root.trunk.branch'), { wrapper });
+
+    expect(result.current[0]).toEqual('leaf');
+  });
+
   test('should call dispatch with the correct action object', () => {
     const { result } = renderHook(() => useRepoState('root.trunk'), { wrapper });
 
     act(() => {
-      result.current[1]('root.trunk.branch', 'set', 'newLeaf');
+      result.current[1]('set', 'newLeaf');
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
-      statePath: 'root.trunk.branch',
+      statePath: 'root.trunk',
       type: 'set',
       value: 'newLeaf'
     });
