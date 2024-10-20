@@ -1,4 +1,7 @@
 node_modules/
 test/
+example/
 npm-debug.*
 .babelrc
+webpack.dev.config.js
+jest.config.js
