@@ -1,7 +1,7 @@
 {
   "name": "repostate",
   "version": "1.0.0",
-  "description": "",
+  "description": "A lightweight state management solution for React applications",
   "main": "dist/index.js",
   "scripts": {
     "clean": "rm -rf dist/",
