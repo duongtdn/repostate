@@ -8,7 +8,7 @@ describe('RepoState.initState', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    RepoState.clear();
+    RepoState.__clear();
   });
 
   test('should store the initial state in the private variable #state', () => {
@@ -36,7 +36,7 @@ describe('RepoState.addReducer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    RepoState.clear();
+    RepoState.__clear();
   });
 
   test('should correctly add reducers for different state paths and action types', () => {
@@ -129,7 +129,7 @@ describe('RepoState.__dispatch (RepoState.#dispatchReducer)', () => {
   beforeEach(() => {
 
     jest.clearAllMocks();
-    RepoState.clear();
+    RepoState.__clear();
 
     mockReducerBranchSet = jest.fn((state, value) => (value));
     mockReducerTrunkSet = jest.fn((state, value) => ({ ...state, ...value }));

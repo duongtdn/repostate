@@ -11,7 +11,8 @@ class RepoState {
 
   getSnapshot = () => deepClone(this.#state);
 
-  clear = () => {
+  // this expose interface for testing purpose only
+  __clear = () => {
     this.#state = null;
     this.#reducers = {};
   }
