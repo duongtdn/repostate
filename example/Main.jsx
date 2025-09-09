@@ -1,8 +1,17 @@
 "use strict"
-import React from'react';
+import React from 'react';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import RepoState from '../src';
+
+// Initialize with core app state
+RepoState.add({
+  app: {
+    loading: false,
+    version: '1.0.0',
+    featuresLoaded: []
+  }
+});
 
 // Add core user state with its reducers
 RepoState.add(
@@ -20,6 +29,8 @@ RepoState.add(
     // Reducers for managing borrowed books
     { path: 'user.borrowBooks', type: 'add', reducer: (state, book) => [...state, book] },
     { path: 'user.borrowBooks', type: 'remove', reducer: (state, book) => state.filter((b) => b !== book) },
+    // User profile update reducer
+    { path: 'user', type: 'update', reducer: (state, updates) => ({ ...state, ...updates }) },
   ]
 );
 
@@ -35,10 +46,13 @@ RepoState.add(
   ]
 );
 
+// Add feature tracking reducer
+RepoState.addReducer('app.featuresLoaded', 'add', (state, feature) => [...state, feature]);
+
 const App = () => {
   return (
     <RepoState.Provider>
-      <div className="flex h-screen">
+      <div className="flex h-screen bg-gray-50">
         <LeftPanel />
         <RightPanel />
       </div>
