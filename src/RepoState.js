@@ -17,6 +17,10 @@ class RepoState {
     this.#reducers = {};
   }
 
+  /**
+   * @deprecated Use `add()` instead. This method will be removed in a future version.
+   * @param {Object} state - Initial state object
+   */
   initState = (state) => {
     if (this.#state === null) {
       this.#state = deepClone(state);
@@ -25,10 +29,72 @@ class RepoState {
     }
   }
 
+  add = (stateToAdd, reducers = []) => {
+    if (!stateToAdd || typeof stateToAdd !== 'object') {
+      throw new Error('State to add must be a valid object');
+    }
+
+    // Initialize state if it's null (replaces initState functionality)
+    if (this.#state === null) {
+      this.#state = deepClone(stateToAdd);
+    } else {
+      // Deep merge with existing state, throw on conflicts
+      this.#state = this.#deepMerge(this.#state, stateToAdd);
+    }
+
+    // Add reducers if provided
+    if (Array.isArray(reducers)) {
+      reducers.forEach(({ path, type, reducer }) => {
+        this.addReducer(path, type, reducer);
+      });
+    }
+
+    // Notify Provider instances of state change
+    this.#notifyStateChange();
+  }
+
+  #deepMerge = (target, source) => {
+    const result = deepClone(target);
+
+    const merge = (targetObj, sourceObj, path = '') => {
+      Object.keys(sourceObj).forEach(key => {
+        const targetValue = targetObj[key];
+        const sourceValue = sourceObj[key];
+        const currentPath = path ? `${path}.${key}` : key;
+
+        if (targetValue && typeof targetValue === 'object' &&
+            sourceValue && typeof sourceValue === 'object' &&
+            !Array.isArray(targetValue) && !Array.isArray(sourceValue)) {
+          // Both are objects, merge recursively
+          merge(targetValue, sourceValue, currentPath);
+        } else if (targetObj.hasOwnProperty(key)) {
+          // Conflict detected - existing value would be overwritten
+          throw new Error(`State conflict detected at path: ${currentPath}`);
+        } else {
+          // No conflict, set the value
+          targetObj[key] = deepClone(sourceValue);
+        }
+      });
+    };
+
+    merge(result, source);
+    return result;
+  }
+
+  #stateChangeCallbacks = new Set();
+
+  #notifyStateChange = () => {
+    this.#stateChangeCallbacks.forEach(callback => callback(this.#state));
+  }
+
+  #subscribeToStateChanges = (callback) => {
+    this.#stateChangeCallbacks.add(callback);
+    return () => this.#stateChangeCallbacks.delete(callback);
+  }
+
   getReducers = () => this.#reducers;
 
   addReducer = (statePath, type, reduceFn) => {
-
     if (statePath && !this.#doesStatePathExist(statePath)) {
       throw new Error(`State path "${statePath}" does not exist`);
     }
@@ -63,6 +129,11 @@ class RepoState {
   };
 
   #dispatchReducer = (state, action) => {
+
+    // Handle external state updates from add() method
+    if (action.type === '__EXTERNAL_STATE_UPDATE__') {
+      return action.newState;
+    }
 
     const { statePath, type, value } = action;
 
@@ -117,7 +188,20 @@ class RepoState {
 
   Provider = ({children}) => {
     const [state, dispatch] = useReducer(this.#dispatchReducer, this.#state);
-    useEffect(() => { this.#state = deepClone(state); }, [state]);
+
+    useEffect(() => {
+      this.#state = deepClone(state);
+    }, [state]);
+
+    // Subscribe to external state changes (from add() method)
+    useEffect(() => {
+      const unsubscribe = this.#subscribeToStateChanges((newState) => {
+        // Force re-render with new state
+        dispatch({ type: '__EXTERNAL_STATE_UPDATE__', newState });
+      });
+      return unsubscribe;
+    }, []);
+
     return (
       <RepoContext.Provider
         value={{
