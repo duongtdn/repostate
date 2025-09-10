@@ -222,6 +222,56 @@ const ShoppingActions = () => {
 
 **Note:** A reducer must be defined for the specified `statePath` and `type`; otherwise, an error will be thrown. If `type` is `null`, the default behavior of directly overwriting the state at the given `statePath` is applied.
 
+### External State Updates
+
+RepoState provides a `dispatch` method that allows you to update state from outside React components. This is perfect for handling external events, API responses, WebSocket messages, timers, and other scenarios where state needs to be updated from non-React code.
+
+#### Example 4: Using External Dispatch
+
+```javascript
+import RepoState from 'repostate';
+
+// WebSocket message handler
+websocket.onmessage = (event) => {
+  const notification = JSON.parse(event.data);
+  RepoState.dispatch('notifications.messages', 'add', notification);
+  RepoState.dispatch('notifications.unread', 'increment');
+};
+
+// Timer-based updates
+setInterval(() => {
+  RepoState.dispatch('app.lastSyncTime', null, new Date().toISOString());
+}, 30000);
+
+// External API response handler
+fetch('/api/user/profile')
+  .then(response => response.json())
+  .then(profile => {
+    RepoState.dispatch('user.profile', 'update', profile);
+  });
+
+// Browser storage events
+window.addEventListener('storage', (event) => {
+  if (event.key === 'theme') {
+    RepoState.dispatch('settings.theme', null, event.newValue);
+  }
+});
+```
+
+#### External Dispatch Features:
+- ✅ **Updates from anywhere** - Call from event handlers, timers, API callbacks
+- ✅ **Automatic re-renders** - React components automatically update when external changes occur
+- ✅ **Same reducer logic** - Uses the same validation and reducer system as React components
+- ✅ **Type safety** - Maintains the same error handling and validation as internal dispatches
+
+#### When to Use External Dispatch:
+- **WebSocket/SSE connections** - Real-time data updates from server
+- **Background timers** - Periodic data refreshes or time-based updates
+- **Browser events** - Storage changes, focus/blur, online/offline status
+- **External libraries** - Integration with third-party services
+- **Service workers** - Push notifications and background sync
+- **Cross-tab communication** - Synchronizing state across browser tabs
+
 ### Accessing Hooks from `RepoState`
 
 You can also access the hooks via the `RepoState` object:
@@ -248,6 +298,7 @@ const YourComponent = () => {
 ### RepoState
 
 - **`add(state, reducers?)`**: Adds state to the global state tree. Deep merges objects and throws errors on conflicts. Optionally adds reducers for the new state paths.
+- **`dispatch(statePath, type, value)`**: Updates state from outside React components. Perfect for external events, API responses, and timers. Automatically triggers React re-renders.
 - **`getSnapshot()`**: Returns a deep clone of the current state.
 - **`addReducer(statePath, type, reduceFn)`**: Adds a reducer function for a specific `statePath` and `type`.
 - **`initState(state)`**: ⚠️ **Deprecated** - Use `add()` instead. Initializes the global state. Can only be called once.

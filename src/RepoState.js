@@ -186,6 +186,22 @@ class RepoState {
     return this.#dispatchReducer(this.#state, action);
   }
 
+  /**
+   * Dispatch an action to update state from outside React components
+   * @param {string|null} statePath - The path to the state (null or '@' for root)
+   * @param {string} type - The action type
+   * @param {*} value - The value to pass to the reducer
+   */
+  dispatch = (statePath, type, value) => {
+    const action = { statePath, type, value };
+
+    // Update the internal state
+    this.#state = this.#dispatchReducer(this.#state, action);
+
+    // Notify all subscribers (React Provider instances) of the change
+    this.#notifyStateChange();
+  }
+
   Provider = ({children}) => {
     const [state, dispatch] = useReducer(this.#dispatchReducer, this.#state);
 
@@ -193,7 +209,7 @@ class RepoState {
       this.#state = deepClone(state);
     }, [state]);
 
-    // Subscribe to external state changes (from add() method)
+    // Subscribe to external state changes (from add() method and dispatch())
     useEffect(() => {
       const unsubscribe = this.#subscribeToStateChanges((newState) => {
         // Force re-render with new state

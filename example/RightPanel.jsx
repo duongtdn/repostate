@@ -4,6 +4,7 @@ import { useRepoState, useRepoDispatch } from '../src';
 import RepoState from '../src';
 import FeatureLoader from './FeatureLoader';
 import DynamicFeatures from './DynamicFeatures';
+import ExternalDispatchDemo from './ExternalDispatchDemo';
 
 const RightPanel = () => {
   const [userName, setUserName] = useRepoState('user.name');
@@ -355,6 +356,11 @@ const RightPanel = () => {
           </div>
         </div>
       )}
+
+      {/* External Dispatch Demo */}
+      <div className="mb-8">
+        <ExternalDispatchDemo />
+      </div>
 
       {/* Advanced Feature Loader */}
       <div className="mb-8">
