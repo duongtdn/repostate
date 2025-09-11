@@ -141,6 +141,11 @@ class RepoState {
       throw new Error(`State path "${statePath}" does not exist`);
     }
 
+    // Validate type is a string (except for null/undefined which are handled separately)
+    if (type !== null && type !== undefined && typeof type !== 'string') {
+      throw new Error(`Action type must be a string, received: ${typeof type}`);
+    }
+
     // Helper function to update the state at a specific path
     const applyUpdateToState = (state, path, updatedSubState) => {
       if (path) {
@@ -165,7 +170,7 @@ class RepoState {
 
     const reducer = this.#reducers?.[statePath || '@']?.[type];
 
-    if (!reducer && (type === null || type === undefined)) {
+    if (!reducer && (type === null || type === undefined || type.toLowerCase() === 'set')) {
       // Default reducer behavior: directly override the value
       return applyUpdateToState(state, pathToClone, value);
     }
