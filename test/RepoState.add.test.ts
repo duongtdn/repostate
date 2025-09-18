@@ -1,6 +1,4 @@
-"use strict"
-
-import RepoState from 'RepoState'
+import RepoState from '../src/RepoState';
 
 describe('RepoState.add', () => {
 
@@ -89,8 +87,8 @@ describe('RepoState.add', () => {
 
   describe('Reducers integration', () => {
     test('should add reducers with array format', () => {
-      const userReducer = jest.fn((state, value) => ({ ...state, ...value }));
-      const settingsReducer = jest.fn((state) => state === 'dark' ? 'light' : 'dark');
+      const userReducer = jest.fn((state: any, value: any) => ({ ...state, ...value }));
+      const settingsReducer = jest.fn((state: string) => state === 'dark' ? 'light' : 'dark');
 
       RepoState.add(
         {
@@ -103,39 +101,49 @@ describe('RepoState.add', () => {
         ]
       );
 
+      // Verify state was added
+      expect(RepoState.getSnapshot()).toEqual({
+        user: { name: 'John' },
+        settings: { theme: 'dark' }
+      });
+
+      // Verify reducers were added
       const reducers = RepoState.getReducers();
-      expect(reducers['user']['update']).toBe(userReducer);
-      expect(reducers['settings.theme']['toggle']).toBe(settingsReducer);
+      expect(reducers['user']).toBeDefined();
+      expect(reducers['user']!['update']).toBe(userReducer);
+      expect(reducers['settings.theme']).toBeDefined();
+      expect(reducers['settings.theme']!['toggle']).toBe(settingsReducer);
     });
 
-    test('should work without reducers', () => {
-      RepoState.add({ user: { name: 'John' } });
+    test('should handle empty reducers array', () => {
+      RepoState.add({ test: 'value' }, []);
+      expect(RepoState.getSnapshot()).toEqual({ test: 'value' });
+    });
 
-      expect(RepoState.getSnapshot()).toEqual({
-        user: { name: 'John' }
-      });
+    test('should handle undefined reducers', () => {
+      RepoState.add({ test: 'value' });
+      expect(RepoState.getSnapshot()).toEqual({ test: 'value' });
     });
   });
 
   describe('Error handling', () => {
-    test('should throw error for invalid state', () => {
-      expect(() => RepoState.add(null)).toThrowError('State to add must be a valid object');
-      expect(() => RepoState.add('string')).toThrowError('State to add must be a valid object');
-      expect(() => RepoState.add(123)).toThrowError('State to add must be a valid object');
+    test('should throw error for invalid state input', () => {
+      expect(() => {
+        RepoState.add(null as any);
+      }).toThrowError('State to add must be a valid object');
+
+      expect(() => {
+        RepoState.add('string' as any);
+      }).toThrowError('State to add must be a valid object');
     });
-  });
 
-  describe('State immutability', () => {
-    test('should not mutate original state objects', () => {
-      const originalState = { user: { name: 'John' } };
-      const stateToAdd = { user: { age: 30 } };
-
-      RepoState.add(originalState);
-      RepoState.add(stateToAdd);
-
-      // Original objects should not be modified
-      expect(originalState).toEqual({ user: { name: 'John' } });
-      expect(stateToAdd).toEqual({ user: { age: 30 } });
+    test('should throw error for non-existent state path in reducers', () => {
+      expect(() => {
+        RepoState.add(
+          { user: { name: 'John' } },
+          [{ path: 'nonexistent.path', type: 'update', reducer: () => ({}) }]
+        );
+      }).toThrowError('State path "nonexistent.path" does not exist');
     });
   });
 

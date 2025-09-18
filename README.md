@@ -1,6 +1,77 @@
-# RepoState
+# RepoState v2.0.0
 
 RepoState is a lightweight state management solution for React applications. It provides global state management with hooks for accessing and updating the state at different paths within your state tree. RepoState allows for a clean and modular way to manage application state with support for dynamic state composition.
+
+## Installation
+
+```bash
+npm install repostate
+```
+
+## Quick Start (TypeScript)
+
+```typescript
+import RepoState, { useRepoState, type ReducerConfig } from 'repostate';
+
+// Define your state types
+interface UserState {
+  name: string;
+  email: string;
+  preferences: {
+    theme: 'light' | 'dark';
+    notifications: boolean;
+  };
+}
+
+interface AppState {
+  user: UserState;
+  settings: {
+    theme: 'light' | 'dark';
+  };
+}
+
+// Add state with reducers
+const reducers: ReducerConfig[] = [
+  {
+    path: 'user',
+    type: 'update',
+    reducer: (state: UserState, updates: Partial<UserState>) => ({ ...state, ...updates })
+  },
+  {
+    path: 'user.preferences.theme',
+    type: 'toggle',
+    reducer: (theme: 'light' | 'dark') => theme === 'dark' ? 'light' : 'dark'
+  }
+];
+
+RepoState.add<AppState>({
+  user: {
+    name: 'John',
+    email: 'john@example.com',
+    preferences: { theme: 'dark', notifications: true }
+  },
+  settings: { theme: 'dark' }
+}, reducers);
+
+// Use in components with full type safety
+const UserProfile: React.FC = () => {
+  const [user, dispatchUser] = useRepoState<UserState>('user');
+  const [theme, dispatchTheme] = useRepoState<'light' | 'dark'>('user.preferences.theme');
+
+  return (
+    <div>
+      <p>Name: {user.name}</p>
+      <button onClick={() => dispatchUser('update', { name: 'Jane' })}>
+        Change Name
+      </button>
+      <p>Theme: {theme}</p>
+      <button onClick={() => dispatchTheme('toggle')}>
+        Toggle Theme
+      </button>
+    </div>
+  );
+};
+```
 
 ## Installation
 
@@ -12,9 +83,9 @@ npm install repostate
 
 ### Adding State
 
-RepoState uses `add()` API that allows you to build your state incrementally. This is perfect for modular applications, micro-frontends, or lazy-loaded features.
+RepoState uses the `add()` API that allows you to build your state incrementally. This is perfect for modular applications, micro-frontends, or lazy-loaded features.
 
-```javascript
+```typescript
 import RepoState from 'repostate';
 
 // Initialize with your core state
@@ -36,7 +107,7 @@ RepoState.add({
     }
   },
   cart: {
-    items: []
+    items: [] as string[]
   }
 });
 // Results in merged state:
@@ -51,30 +122,45 @@ RepoState.add({
 
 You can add state and reducers together for a complete feature module. Reducers are functions that take the current state and the new value, then return an updated state. They only need to focus on the specific portion of the state related to their business logic, without requiring knowledge of the entire state, making them modular and easier to maintain.
 
-```javascript
+```typescript
+import RepoState, { type ReducerConfig } from 'repostate';
+
+// Define types for better type safety
+interface CounterState {
+  value: number;
+}
+
+interface NotificationState {
+  unread: number;
+}
+
 // Add state with its related reducers
+const reducers: ReducerConfig[] = [
+  { path: 'counter.value', type: 'increase', reducer: (state: number, value: number) => state + value },
+  { path: 'counter.value', type: 'reset', reducer: () => 0 },
+  { path: 'notifications.unread', type: 'increment', reducer: (state: number) => state + 1 },
+  { path: 'notifications.unread', type: 'clear', reducer: () => 0 }
+];
+
 RepoState.add(
   {
     counter: { value: 0 },
     notifications: { unread: 0 }
   },
-  [
-    { path: 'counter.value', type: 'increase', reducer: (state, value) => state + value },
-    { path: 'counter.value', type: 'reset', reducer: () => 0 },
-    { path: 'notifications.unread', type: 'increment', reducer: (state) => state + 1 },
-    { path: 'notifications.unread', type: 'clear', reducer: () => 0 }
-  ]
+  reducers
 );
 
 // Or add reducers separately for existing state
-RepoState.addReducer('settings.theme', 'toggle', (state) => (state === 'dark' ? 'light' : 'dark'));
+RepoState.addReducer('settings.theme', 'toggle', (state: 'dark' | 'light') =>
+  state === 'dark' ? 'light' : 'dark'
+);
 ```
 
 ### State Conflicts
 
 RepoState prevents accidental state conflicts by throwing errors when you try to overwrite existing values:
 
-```javascript
+```typescript
 RepoState.add({ user: { name: 'John' } });
 RepoState.add({ user: { name: 'Jane' } }); // ❌ Throws: State conflict detected at path: user.name
 
@@ -86,11 +172,11 @@ RepoState.add({ user: { email: 'jane@example.com' } }); // ✅ Works fine
 
 Wrap your app or specific components with the `RepoState.Provider` to make the state available:
 
-```javascript
+```typescript
 import React from 'react';
 import RepoState from 'repostate';
 
-const App = () => (
+const App: React.FC = () => (
   <RepoState.Provider>
     <YourComponent />
   </RepoState.Provider>
@@ -103,7 +189,7 @@ export default App;
 
 You can use the `useRepoState` and `useRepoDispatch` hooks to access and update the state.
 
-#### Example 1: Modular Feature Development
+#### Modular Feature Development
 
 Here's how you can build features incrementally using the `add` API:
 
@@ -146,7 +232,7 @@ RepoState.add(
 );
 ```
 
-#### Example 2: Using `useRepoState` Hook
+#### Using `useRepoState` Hook
 
 The `useRepoState` hook allows you to access and update a specific part of the state by specifying a `statePath`. If the `statePath` is `null`, `undefined`, or `'@'`, the entire state is returned.
 
@@ -187,7 +273,7 @@ If you want to access the entire state, you can pass `null`, `undefined`, or `'@
 const [state, dispatch] = useRepoState(); // Or use '@' or null
 ```
 
-#### Example 3: Using `useRepoDispatch` Hook
+####  Using `useRepoDispatch` Hook
 
 The `useRepoDispatch` hook provides a global dispatch function that can be used to update any part of the state. The `dispatch` function takes three arguments: `statePath`, `type`, and `value`.
 
@@ -293,66 +379,57 @@ const YourComponent = () => {
 };
 ```
 
-## API
+## API Reference
 
 ### RepoState
 
-- **`add(state, reducers?)`**: Adds state to the global state tree. Deep merges objects and throws errors on conflicts. Optionally adds reducers for the new state paths.
-- **`dispatch(statePath, type, value)`**: Updates state from outside React components. Perfect for external events, API responses, and timers. Automatically triggers React re-renders.
-- **`getSnapshot()`**: Returns a deep clone of the current state.
-- **`addReducer(statePath, type, reduceFn)`**: Adds a reducer function for a specific `statePath` and `type`.
-- **`initState(state)`**: ⚠️ **Deprecated** - Use `add()` instead. Initializes the global state. Can only be called once.
+- **`add<T>(state: T, reducers?: ReducerConfig[]): void`**: Adds state to the global state tree. Deep merges objects and throws errors on conflicts. Optionally adds reducers for the new state paths.
+- **`dispatch(statePath: StatePath, type: ActionType, value?: any): void`**: Updates state from outside React components. Perfect for external events, API responses, and timers. Automatically triggers React re-renders.
+- **`getSnapshot(): StateObject`**: Returns a deep clone of the current state.
+- **`addReducer(statePath: string, type: string, reduceFn: Reducer): void`**: Adds a reducer function for a specific `statePath` and `type`.
 
-### `useRepoState(statePath)`
+### `useRepoState<T>(statePath?: StatePath): UseRepoStateReturn<T>`
 
 A React hook that provides access to a specific substate and a function to update that substate.
 
 - **`statePath`**: A string representing the path to the desired state. If `statePath` is `null`, `undefined`, or `'@'`, it returns the entire state.
 
 Returns an array `[subState, dispatchFn]`:
-- **`subState`**: The current value of the substate at `statePath`.
-- **`dispatchFn(type, value)`**: A function to dispatch an action to update the state at the specified `statePath`. If `type` is `null`, the default behavior of directly overwriting the state at the given `statePath` with given `value` is applied.
+- **`subState: T`**: The current value of the substate at `statePath`.
+- **`dispatchFn(type: ActionType, value?: any): void`**: A function to dispatch an action to update the state at the specified `statePath`. If `type` is `null`, the default behavior of directly overwriting the state at the given `statePath` with given `value` is applied.
 
-### `useRepoDispatch()`
+### `useRepoDispatch(): DispatchFunction`
 
 A React hook that returns a `dispatch` function for updating the state directly.
 
-- **`dispatch(statePath, type, value)`**: Dispatches an action to update the state at the specified `statePath`. If `type` is `null`, the default behavior of directly overwriting the state at the given `statePath` with given `value` is applied.
+- **`dispatch(statePath: StatePath, type: ActionType, value?: any): void`**: Dispatches an action to update the state at the specified `statePath`. If `type` is `null`, the default behavior of directly overwriting the state at the given `statePath` with given `value` is applied.
 
-## Migration from initState
+### TypeScript Types
 
-If you're currently using `initState`, migration to the new `add` API is straightforward:
+RepoState v2.0.0 exports all necessary types for TypeScript users:
 
-### Before (deprecated):
-```javascript
-RepoState.initState({
-  user: { name: 'John' },
-  settings: { theme: 'dark' }
+```typescript
+import type {
+  StateObject,
+  Reducer,
+  ReducerConfig,
+  DispatchFunction,
+  UseRepoStateReturn,
+  StatePath,
+  ActionType
+} from 'repostate';
+
+// Type-safe reducer definition
+const userReducer: Reducer<UserState, Partial<UserState>> = (state, updates) => ({
+  ...state,
+  ...updates
 });
 
-RepoState.addReducer('user', 'update', (state, updates) => ({ ...state, ...updates }));
-RepoState.addReducer('settings.theme', 'toggle', (state) => state === 'dark' ? 'light' : 'dark');
+// Type-safe reducer config
+const reducerConfig: ReducerConfig[] = [
+  { path: 'user', type: 'update', reducer: userReducer }
+];
 ```
-
-### After (recommended):
-```javascript
-RepoState.add(
-  {
-    user: { name: 'John' },
-    settings: { theme: 'dark' }
-  },
-  [
-    { path: 'user', type: 'update', reducer: (state, updates) => ({ ...state, ...updates }) },
-    { path: 'settings.theme', type: 'toggle', reducer: (state) => state === 'dark' ? 'light' : 'dark' }
-  ]
-);
-```
-
-### Benefits of Migration:
-- ✅ **Modular state management** - Add state incrementally as features load
-- ✅ **Better organization** - Group related state and reducers together
-- ✅ **Conflict prevention** - Automatic detection of state conflicts
-- ✅ **Future-proof** - Built for modern application architectures
 
 ## License
 

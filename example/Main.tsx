@@ -1,14 +1,13 @@
-"use strict"
 import React from 'react';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
-import RepoState from '../src';
+import RepoState from 'repostate';
 
 // Initialize with core app state
 RepoState.add({
   app: {
     loading: false,
-    version: '1.0.0',
+    version: '2.0.0',
     featuresLoaded: []
   }
 });
@@ -27,10 +26,10 @@ RepoState.add(
   },
   [
     // Reducers for managing borrowed books
-    { path: 'user.borrowBooks', type: 'add', reducer: (state, book) => [...state, book] },
-    { path: 'user.borrowBooks', type: 'remove', reducer: (state, book) => state.filter((b) => b !== book) },
+    { path: 'user.borrowBooks', type: 'add', reducer: (state: string[], book: string) => [...state, book] },
+    { path: 'user.borrowBooks', type: 'remove', reducer: (state: string[], book: string) => state.filter((b) => b !== book) },
     // User profile update reducer
-    { path: 'user', type: 'update', reducer: (state, updates) => ({ ...state, ...updates }) },
+    { path: 'user', type: 'update', reducer: (state: any, updates: any) => ({ ...state, ...updates }) },
   ]
 );
 
@@ -41,15 +40,15 @@ RepoState.add(
   },
   [
     // Reducers for managing the books collection
-    { path: 'books', type: 'add', reducer: (state, book) => [...state, book] },
-    { path: 'books', type: 'remove', reducer: (state, book) => state.filter((b) => b !== book) },
+    { path: 'books', type: 'add', reducer: (state: string[], book: string) => [...state, book] },
+    { path: 'books', type: 'remove', reducer: (state: string[], book: string) => state.filter((b) => b !== book) },
   ]
 );
 
 // Add feature tracking reducer
-RepoState.addReducer('app.featuresLoaded', 'add', (state, feature) => [...state, feature]);
+RepoState.addReducer('app.featuresLoaded', 'add', (state: string[], feature: string) => [...state, feature]);
 
-const App = () => {
+const App: React.FC = () => {
   return (
     <RepoState.Provider>
       <div className="flex h-screen bg-gray-50">

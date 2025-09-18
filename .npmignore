@@ -3,6 +3,5 @@ src/
 test/
 example/
 npm-debug.*
-.babelrc
-webpack.dev.config.js
+tsconfig.json
 jest.config.js

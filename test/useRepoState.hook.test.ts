@@ -1,9 +1,10 @@
-// useRepoState.hook.test.js
+// useRepoState.hook.test.ts
 
 import { renderHook, act } from '@testing-library/react';
-import useRepoState from 'useRepoState.hook';
-import RepoContext from 'RepoContext';
+import useRepoState from '../src/useRepoState.hook';
+import RepoContext from '../src/RepoContext';
 import React from 'react';
+import type { ReactNode } from 'react';
 
 const mockState = {
   root: {
@@ -26,11 +27,13 @@ const mockState = {
 
 const mockDispatch = jest.fn();
 
-const wrapper = ({ children }) => (
-  <RepoContext.Provider value={{ state: mockState, dispatch: mockDispatch }}>
-    {children}
-  </RepoContext.Provider>
-);
+const wrapper = ({ children }: { children: ReactNode }) => {
+  return React.createElement(
+    RepoContext.Provider,
+    { value: { state: mockState, dispatch: mockDispatch } },
+    children
+  );
+};
 
 describe('useRepoState', () => {
 

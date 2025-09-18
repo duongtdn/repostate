@@ -33,7 +33,7 @@ This example demonstrates the powerful `RepoState.add()` API for modular and dyn
 ## To run example:
 
 ```bash
-npm start
+npm run example
 ```
 
 ## Code Structure

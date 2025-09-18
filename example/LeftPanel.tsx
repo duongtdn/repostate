@@ -1,12 +1,11 @@
-"use strict"
 import React from 'react';
-import { useRepoState } from '../src';
+import { useRepoState } from 'repostate';
 
-const LeftPanel = () => {
+const LeftPanel: React.FC = () => {
   const [stateTree] = useRepoState();
-  const [featuresLoaded] = useRepoState('app.featuresLoaded');
+  const [featuresLoaded] = useRepoState<string[]>('app.featuresLoaded');
 
-  const formatStateTree = (obj, indent = 0) => {
+  const formatStateTree = (obj: any, indent = 0): string => {
     const spaces = '  '.repeat(indent);
 
     if (typeof obj !== 'object' || obj === null) {

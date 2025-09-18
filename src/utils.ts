@@ -1,6 +1,6 @@
-"use strict"
+import type { StateObject } from './types';
 
-export function deepClone(obj, path = null) {
+export function deepClone(obj: any, path: string | null = null): any {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
@@ -8,10 +8,10 @@ export function deepClone(obj, path = null) {
   // If a path is provided, we need to traverse the object to reach the target path
   if (path) {
     const pathParts = path.split('.');
-    let current = obj;
+    let current: any = obj;
 
     for (const part of pathParts) {
-      if (current === undefined || current === null || !current.hasOwnProperty(part)) {
+      if (current === undefined || current === null || !Object.prototype.hasOwnProperty.call(current, part)) {
         throw new Error(`Invalid path: ${path}`);
       }
       current = current[part];
@@ -23,13 +23,12 @@ export function deepClone(obj, path = null) {
     return obj.map(item => deepClone(item));
   }
 
-  const clonedObj = {};
+  const clonedObj: StateObject = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       clonedObj[key] = deepClone(obj[key]);
     }
   }
 
   return clonedObj;
 }
-
